@@ -1,1 +1,0 @@
-# gj-connect-proto

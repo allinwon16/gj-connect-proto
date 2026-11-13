@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>광진이음 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* 레이아웃: 폰 폭의 한 칸짜리 앱. 위 머리띠, 가운데 스크롤 영역, 아래 탭. 심부름은 게시판에 붙은 쪽지처럼. */
+:root {
+  --bg: #e9ecf3;
+  --surface: #ffffff;
+  --ink: #171c2c;
+  --muted: #5d6579;
+  --line: #d5d9e4;
+  --accent: #2444c9;
+  --accent-ink: #ffffff;
+  --mark: #ffe45c;
+  --mark-ink: #2a2400;
+  --wait: #2444c9;
+  --run: #b45f00;
+  --ok: #17794a;
+  --danger: #b3261e;
+  --meal: #c2410c;
+  --share: #17794a;
+  --font-display: 'Do Hyeon', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1018; --surface: #181c28; --ink: #eceef5; --muted: #9aa2b6; --line: #2c3243;
+    --accent: #8ea2ff; --accent-ink: #0d1018; --mark: #ffe45c; --mark-ink: #2a2400;
+    --wait: #8ea2ff; --run: #ffb454; --ok: #5fd39a; --danger: #ff8a80; --meal: #ff9a62; --share: #5fd39a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1018; --surface: #181c28; --ink: #eceef5; --muted: #9aa2b6; --line: #2c3243;
+  --accent: #8ea2ff; --accent-ink: #0d1018; --mark: #ffe45c; --mark-ink: #2a2400;
+  --wait: #8ea2ff; --run: #ffb454; --ok: #5fd39a; --danger: #ff8a80; --meal: #ff9a62; --share: #5fd39a;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; max-width: 430px; margin: 0 auto; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+@media (min-width: 480px) { .app { border-inline: 1px solid var(--line); } }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--accent); color: var(--accent-ink); }
+.brand { font-family: var(--font-display); font-size: 22px; letter-spacing: .5px; }
+.user { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-size: 13px; }
+.user b { font-weight: 600; }
+.user small { opacity: .8; font-size: 12px; }
+.user .swap { font-size: 12px; padding-left: 8px; border-left: 1px solid currentColor; }
+
+main { flex: 1; overflow-y: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.count { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+.cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.card { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: 4px 12px 12px 4px; }
+.card:hover { border-color: var(--accent); }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card-title { font-weight: 600; font-size: 16px; overflow-wrap: anywhere; }
+.card-place { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; }
+.tag { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1.5px solid var(--ink); }
+.status { font-size: 12px; font-weight: 600; }
+.status::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: currentColor; }
+.status-open { color: var(--wait); } .status-in_progress { color: var(--run); } .status-done { color: var(--ok); }
+.reward { display: inline-block; background: var(--mark); color: var(--mark-ink); font-weight: 700; padding: 1px 8px; border-radius: 3px; font-variant-numeric: tabular-nums; }
+.deadline { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.empty { margin: 0; padding: 28px 16px; text-align: center; color: var(--muted); border: 1.5px dashed var(--line); border-radius: 12px; }
+
+form { display: flex; flex-direction: column; gap: 6px; }
+label { font-weight: 600; font-size: 14px; margin-top: 8px; }
+.opt { font-weight: 400; color: var(--muted); font-size: 12px; }
+input, select, textarea { width: 100%; padding: 11px 12px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; }
+textarea { resize: vertical; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.form-error { margin: 0; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--danger); color: var(--danger); font-weight: 600; }
+.hint, .note { margin: 0; color: var(--muted); font-size: 13px; }
+.note { padding: 12px; border: 1.5px dashed var(--line); border-radius: 8px; }
+.note.done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+
+.primary { margin-top: 12px; padding: 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px; }
+.ghost { padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; background: transparent; color: var(--muted); }
+.back { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--accent); font-weight: 600; }
+.reset { align-self: center; margin-top: 8px; padding: 8px 12px; border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 13px; }
+
+.detail { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.detail h1 { overflow-wrap: anywhere; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.steps li { padding-top: 8px; border-top: 4px solid var(--line); color: var(--muted); font-size: 13px; }
+.steps .past { border-color: var(--ink); color: var(--ink); }
+.steps .now { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+dl { margin: 0; display: grid; grid-template-columns: 6.5em 1fr; gap: 8px 12px; }
+dt { color: var(--muted); font-size: 14px; }
+dd { margin: 0; overflow-wrap: anywhere; justify-self: start; }
+.detail-text { margin: 0; padding: 12px; background: var(--bg); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1.5px solid var(--ink); border-radius: 10px; overflow: hidden; }
+.seg button { padding: 10px 6px; border: 0; background: var(--surface); color: var(--muted); font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
+
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabs button { padding: 12px 4px 14px; border: 0; border-top: 3px solid transparent; background: none; color: var(--muted); font-weight: 600; }
+.tabs button[aria-current="page"] { color: var(--accent); border-top-color: var(--accent); }
+
+.toast { position: absolute; left: 16px; right: 16px; bottom: 72px; padding: 12px 14px; border-radius: 10px; background: var(--ink); color: var(--bg); text-align: center; font-size: 14px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s, transform .2s; }
+.toast.show { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* 서비스별 색 띠, 무료 표시 */
+.card.kind-meal { border-left-color: var(--meal); }
+.card.kind-share { border-left-color: var(--share); }
+.reward.free { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); font-weight: 600; font-size: 13px; }
+.foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin-top: 8px; }
+.foot .reset { margin-top: 0; }
+
+/* 로그인 */
+.guest .tabs, .guest .actions { display: none; }
+.actions { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.logout { padding: 6px 10px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-size: 12px; white-space: nowrap; }
+.user { padding: 6px 8px; }
+.top { flex-wrap: wrap; }
+.login { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }
+.eyebrow { margin: 0; align-self: flex-start; background: var(--mark); color: var(--mark-ink); font-weight: 700; font-size: 13px; padding: 2px 10px; border-radius: 3px; }
+.login h1 { font-size: 28px; }
+.services { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.services li { padding: 4px 12px; border: 1.5px solid var(--ink); border-radius: 4px; font-weight: 600; font-size: 14px; }
+
+main > * { flex-shrink: 0; }
+.chk { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; }
+.chk input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+.now-tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 3px; border: 1.5px solid var(--ok); color: var(--ok); }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <span class="brand">광진이음</span>
+    <div class="actions">
+      <button class="user" id="switch-user" type="button" aria-label="사용자 전환">
+        <b id="user-name"></b><small id="user-dept"></small><span class="swap">전환</span>
+      </button>
+      <button class="logout" type="button" data-logout>로그아웃</button>
+    </div>
+  </header>
+  <main id="main"></main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <nav class="tabs" aria-label="메뉴">
+    <button type="button" data-go="home">홈</button>
+    <button type="button" data-go="new">올리기</button>
+    <button type="button" data-go="mine">내 활동</button>
+  </nav>
+</div>
+<script>
+(function (root) {
+  'use strict';
+
+  var KINDS = {
+    errand: {
+      label: '심부름', reward: true,
+      categories: { delivery: '배달', print: '프린트', parcel: '택배', etc: '기타' },
+      status: { open: '대기', in_progress: '진행 중', done: '완료' }
+    },
+    meal: {
+      label: '식사동행', reward: false,
+      categories: { cafeteria: '학식', restaurant: '맛집', cafe: '카페', etc: '기타' },
+      status: { open: '모집 중', in_progress: '약속 잡힘', done: '식사 완료' }
+    },
+    share: {
+      label: '물건 나눔', reward: false,
+      categories: { household: '생활용품', book: '책·문구', clothes: '의류', etc: '기타' },
+      status: { open: '나눔 중', in_progress: '예약됨', done: '나눔 완료' }
+    }
+  };
+
+  // 로그인할 수 있는 소속 대학교
+  var SCHOOLS = { sejong: '세종대학교', konkuk: '건국대학교' };
+
+  // 예시용 다른 학생들. A는 로그인한 본인, B는 "전환"으로 체험하는 상대방.
+  var OTHERS = {
+    B: { name: '이준서', school: '건국대학교' },
+    C: { name: '박서연', school: '세종대학교' },
+    D: { name: '최민재', school: '건국대학교' }
+  };
+
+  var SEED = [
+    { id: 1, kind: 'errand', title: '학생회관 편의점에서 컵라면이랑 삼각김밥 사다 주세요', category: 'delivery',
+      place: '건국대 상허기념도서관 3층 열람실 앞', reward: 2000, deadline: '18:30',
+      detail: '신라면 작은 컵 1개, 참치마요 1개요. 물건값은 받을 때 바로 보내드릴게요.', requester: 'B' },
+    { id: 2, kind: 'errand', title: '전공 과제 20쪽 흑백 양면 출력', category: 'print',
+      place: '세종대 학생회관 복사실 → 대양AI센터 407호', reward: 1500, deadline: '13:50',
+      detail: '파일은 수락하시면 보내드려요. 2시 수업 전에 받아야 해요.', requester: 'C' },
+    { id: 3, kind: 'errand', title: '기숙사 택배 보관함에서 상자 하나 찾아 주세요', category: 'parcel',
+      place: '건국대 쿨하우스 1층 → 공학관 로비', reward: 2500, deadline: '21:00',
+      detail: '신발 상자 크기예요. 보관함 번호는 수락 후 알려드릴게요.', requester: 'D' },
+    { id: 4, kind: 'meal', title: '학생회관 학식 같이 먹을 분', category: 'cafeteria',
+      place: '세종대 학생회관 지하 1층 식당 앞', reward: 0, deadline: '12:10',
+      detail: '혼밥이 지겨워서 올려요. 각자 계산하고 30분 정도 먹어요.', requester: 'C' },
+    { id: 5, kind: 'meal', title: '건대입구 마라탕, 2인 세트 나눠 먹어요', category: 'restaurant',
+      place: '건대입구역 2번 출구 앞', reward: 0, deadline: '18:00',
+      detail: '2인 세트가 훨씬 싸서요. 맵기는 2단계로 생각 중이에요.', requester: 'B' },
+    { id: 6, kind: 'share', title: '안 쓰는 전공 서적 3권 나눔해요', category: 'book',
+      place: '세종대 생활관 로비', reward: 0, deadline: '20:00',
+      detail: '한 학기 사용했고 필기는 거의 없어요. 3권 모두 한 번에 가져가실 분이면 좋아요.', requester: 'C' },
+    { id: 7, kind: 'share', title: '자취방 정리하면서 남은 수건 4장, 미니 선풍기', category: 'household',
+      place: '건국대 후문 앞', reward: 0, deadline: '19:30',
+      detail: '수건은 새것에 가깝고 선풍기는 정상 작동해요. 이사 전에 정리하려고 올려요.', requester: 'D' }
+  ];
+
+  function own(obj, key) { return typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key); }
+  function text(v) { return String(v == null ? '' : v).trim(); }
+
+  function createState(seed) {
+    var posts = (seed || SEED).map(function (e) {
+      return Object.assign({ status: 'open', runner: null }, e);
+    });
+    var maxId = posts.reduce(function (m, e) { return Math.max(m, e.id); }, 0);
+    return { user: null, me: 'A', posts: posts, nextId: maxId + 1 };
+  }
+
+  // 프로토타입이라 실제 학교 서버 인증은 없고, 입력 형식만 확인한다.
+  // 학번 전체와 비밀번호는 저장하지 않고, 화면에 보일 뒤 4자리만 남긴다.
+  function login(state, input) {
+    input = input || {};
+    var school = own(SCHOOLS, input.school) ? SCHOOLS[input.school] : null;
+    var id = text(input.studentId);
+    var pw = String(input.password == null ? '' : input.password);
+    if (!school) return { ok: false, error: '소속 대학교를 선택해 주세요.' };
+    if (!id) return { ok: false, error: '학번을 입력해 주세요.' };
+    if (!/^\d{6,10}$/.test(id)) return { ok: false, error: '학번은 6~10자리 숫자로 입력해 주세요.' };
+    if (!pw) return { ok: false, error: '비밀번호를 입력해 주세요.' };
+    if (pw.length < 4) return { ok: false, error: '비밀번호는 4자 이상 입력해 주세요.' };
+    state.user = { name: '학번 ' + id.slice(-4), school: school };
+    state.me = 'A';
+    return { ok: true };
+  }
+
+  function logout(state) { state.user = null; state.me = 'A'; }
+
+  function userInfo(state, key) {
+    if (key === 'A') return state.user;
+    return own(OTHERS, key) ? OTHERS[key] : null;
+  }
+
+  function find(state, id) {
+    for (var i = 0; i < state.posts.length; i++) {
+      if (state.posts[i].id === id) return state.posts[i];
+    }
+    return null;
+  }
+
+  var NEED_LOGIN = { ok: false, error: '학교 이메일로 로그인한 뒤에 이용할 수 있어요.' };
+
+  function addPost(state, input) {
+    if (!state.user) return NEED_LOGIN;
+    input = input || {};
+    if (!own(KINDS, input.kind)) return { ok: false, error: '서비스를 골라 주세요.' };
+    var kind = KINDS[input.kind];
+    var title = text(input.title), place = text(input.place), rewardText = text(input.reward);
+    if (!title) return { ok: false, error: '제목을 적어 주세요.' };
+    if (!own(kind.categories, input.category)) return { ok: false, error: '종류를 골라 주세요.' };
+    if (!place) return { ok: false, error: '장소를 적어 주세요.' };
+    if (kind.reward && !/^\d{1,7}$/.test(rewardText)) {
+      return { ok: false, error: '수고비는 0원 이상의 숫자로 적어 주세요.' };
+    }
+    var post = {
+      id: state.nextId++,
+      kind: input.kind,
+      title: title,
+      category: input.category,
+      place: place,
+      reward: kind.reward ? parseInt(rewardText, 10) : 0,
+      deadline: text(input.deadline),
+      detail: text(input.detail),
+      immediate: !!input.immediate,
+      status: 'open',
+      requester: state.me,
+      runner: null
+    };
+    state.posts.push(post);
+    return { ok: true, post: post };
+  }
+
+  function acceptPost(state, id) {
+    if (!state.user) return NEED_LOGIN;
+    var e = find(state, id);
+    if (!e) return { ok: false, error: '글을 찾을 수 없어요.' };
+    if (e.requester === state.me) return { ok: false, error: '내가 올린 글에는 내가 참여할 수 없어요.' };
+    if (e.status !== 'open') return { ok: false, error: '이미 다른 사람이 먼저 참여했어요.' };
+    e.status = 'in_progress';
+    e.runner = state.me;
+    return { ok: true };
+  }
+
+  function completePost(state, id) {
+    if (!state.user) return NEED_LOGIN;
+    var e = find(state, id);
+    if (!e) return { ok: false, error: '글을 찾을 수 없어요.' };
+    if (e.requester !== state.me) return { ok: false, error: '완료 처리는 글을 올린 사람만 할 수 있어요.' };
+    if (e.status !== 'in_progress') return { ok: false, error: '상대가 정해진 글만 완료할 수 있어요.' };
+    e.status = 'done';
+    return { ok: true };
+  }
+
+  function byNewest(a, b) { return b.id - a.id; }
+
+  function listOpen(state, kind, category) {
+    return state.posts.filter(function (e) {
+      return e.kind === kind && e.status === 'open' &&
+        (!category || category === 'all' || e.category === category);
+    }).sort(byNewest);
+  }
+
+  function myPosts(state) {
+    return {
+      posted: state.posts.filter(function (e) { return e.requester === state.me; }).sort(byNewest),
+      accepted: state.posts.filter(function (e) { return e.runner === state.me; }).sort(byNewest)
+    };
+  }
+
+  function switchUser(state) { state.me = state.me === 'A' ? 'B' : 'A'; }
+
+  var api = {
+    KINDS: KINDS, SCHOOLS: SCHOOLS, SEED: SEED,
+    createState: createState, login: login, logout: logout,
+    userInfo: userInfo, find: find, addPost: addPost, acceptPost: acceptPost,
+    completePost: completePost, listOpen: listOpen, myPosts: myPosts, switchUser: switchUser
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Logic = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function (root) {
+  'use strict';
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { escapeHtml: escapeHtml };
+    return;
+  }
+
+  var L = root.Logic;
+  var KEY = 'gwangjin-ieum-prototype-v4';
+
+  // 서비스마다 달라지는 화면 문구
+  var T = {
+    errand: {
+      homeTitle: '지금 올라온 심부름', empty: '이 종류로 대기 중인 심부름이 없어요.',
+      titleLabel: '무엇을 부탁하나요', titlePh: '예: 학생회관에서 아메리카노 한 잔',
+      placeLabel: '장소', placePh: '예: 학생회관 1층 → 인문관 204호',
+      timeLabel: '언제까지', timeSuffix: '까지', detailPh: '물건값 정산 방법, 받을 위치 등',
+      submit: '안전매칭 요청하기', hint: '수고비 결제는 준비 중이에요. 지금은 만나서 직접 정산하는 것으로 가정해요.',
+      accept: '이 심부름 수락하기', complete: '받았어요, 완료 처리하기',
+      accepted: '수락했어요. 내 활동에서 확인할 수 있어요.', completed: '완료 처리했어요. 수고비를 정산해 주세요.',
+      waiting: '수락할 사람을 기다리는 중이에요.', running: '심부름을 전달하면 부탁한 사람이 완료를 확인해요.',
+      poster: '부탁한 사람', taker: '해주는 사람', badge: ''
+    },
+    meal: {
+      homeTitle: '같이 먹을 사람을 찾는 글', empty: '이 종류로 모집 중인 식사 약속이 없어요.',
+      titleLabel: '어떤 식사인가요', titlePh: '예: 학생회관 학식 같이 먹어요',
+      placeLabel: '만날 곳', placePh: '예: 건국대 학생회관 1층 식당 앞',
+      timeLabel: '만나는 시간', timeSuffix: ' 만남', detailPh: '메뉴, 계산 방법, 식사 시간 등',
+      submit: '식사동행 올리기', hint: '처음 만날 때는 학교 안이나 사람이 많은 곳에서 만나세요.',
+      accept: '같이 먹을게요', complete: '식사했어요, 완료 처리하기',
+      accepted: '약속이 잡혔어요. 내 활동에서 확인할 수 있어요.', completed: '식사 완료로 처리했어요.',
+      waiting: '같이 먹을 사람을 기다리는 중이에요.', running: '약속 시간에 만나서 식사하면 모집한 사람이 완료를 확인해요.',
+      poster: '모집한 사람', taker: '함께하는 사람', badge: '같이 식사'
+    },
+    share: {
+      homeTitle: '나눔 중인 물건', empty: '이 종류로 나눔 중인 글이 없어요.',
+      titleLabel: '무엇을 나누나요', titlePh: '예: 안 쓰는 전공 서적 3권',
+      placeLabel: '받아갈 곳', placePh: '예: 세종대 생활관 로비',
+      timeLabel: '언제까지', timeSuffix: '까지', detailPh: '물건 상태, 수량, 사용 기간 등',
+      submit: '물건 나눔 올리기', hint: '물건 상태를 솔직하게 적어 주세요. 받는 사람과는 학교 안에서 만나세요.',
+      accept: '제가 받을게요', complete: '전달했어요, 나눔 완료하기',
+      accepted: '예약했어요. 내 활동에서 확인할 수 있어요.', completed: '나눔 완료로 처리했어요.',
+      waiting: '받아갈 사람을 기다리는 중이에요.', running: '받아가면 나눈 사람이 완료를 확인해요.',
+      poster: '나누는 사람', taker: '받는 사람', badge: '무료 나눔'
+    }
+  };
+  var KIND_KEYS = Object.keys(L.KINDS);
+
+  var state = load() || L.createState();
+  var view = { name: 'home', id: null, back: 'home', kind: 'errand', category: 'all', mineTab: 'posted',
+    draft: null, error: '', loginDraft: { school: '', studentId: '', password: '' } };
+  var toastTimer = null;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (s && Array.isArray(s.posts) && (s.me === 'A' || s.me === 'B') && typeof s.nextId === 'number') return s;
+    } catch (e) { /* 저장소를 못 쓰면 메모리로만 동작 */ }
+    return null;
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 무시 */ }
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var won = function (n) { return Number(n).toLocaleString('ko-KR') + '원'; };
+  function who(key) {
+    var u = L.userInfo(state, key);
+    return u ? escapeHtml(u.name) + ' · ' + escapeHtml(u.school) : '알 수 없음';
+  }
+  function when(e) { return e.deadline ? escapeHtml(e.deadline) + T[e.kind].timeSuffix : '시간 협의'; }
+  function badge(e) {
+    return L.KINDS[e.kind].reward ? '<span class="reward">' + won(e.reward) + '</span>'
+      : '<span class="reward free">' + T[e.kind].badge + '</span>';
+  }
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  function go(name, extra) {
+    view.name = name;
+    view.error = '';
+    if (extra) Object.assign(view, extra);
+    render();
+    $('main').scrollTop = 0;
+  }
+
+  function seg(attr, items, current, label) {
+    return '<div class="seg" role="group" aria-label="' + label + '">' + items.map(function (it) {
+      return '<button type="button" data-' + attr + '="' + it[0] + '" aria-pressed="' + (current === it[0]) + '">' + it[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  var kindSeg = function () {
+    return seg('kind', KIND_KEYS.map(function (k) { return [k, L.KINDS[k].label]; }), view.kind, '서비스 고르기');
+  };
+
+  function card(e, showKind) {
+    var k = L.KINDS[e.kind];
+    return '<li><button class="card kind-' + e.kind + '" type="button" data-open="' + e.id + '">' +
+      '<span class="card-top"><span class="tag">' + (showKind ? k.label + ' · ' : '') + k.categories[e.category] + '</span>' +
+      '<span class="status status-' + e.status + '">' + k.status[e.status] + '</span></span>' +
+      '<span class="card-title">' + escapeHtml(e.title) + '</span>' +
+      '<span class="card-place">' + escapeHtml(e.place) + '</span>' +
+      '<span class="card-bottom"><span>' + badge(e) + (e.immediate ? ' <span class="now-tag">바로 출근 가능</span>' : '') + '</span><span class="deadline">' + when(e) + '</span></span>' +
+      '</button></li>';
+  }
+
+  function empty(text) { return '<p class="empty">' + text + '</p>'; }
+
+  function renderLogin() {
+    var d = view.loginDraft;
+    return '<div class="login">' +
+      '<p class="eyebrow">세종대 · 건국대 학생 전용</p>' +
+      '<h1>광진구 대학생끼리<br>부탁하고 나눠요</h1>' +
+      '<ul class="services"><li>심부름</li><li>식사동행</li><li>물건 나눔</li></ul>' +
+      '<form id="login-form" novalidate>' +
+      (view.error ? '<p class="form-error" role="alert">' + escapeHtml(view.error) + '</p>' : '') +
+      '<label for="l-school">소속 대학교</label>' +
+      '<select id="l-school" name="school">' +
+      '<option value="">대학교를 선택하세요</option>' +
+      '<option value="sejong"' + (d.school === 'sejong' ? ' selected' : '') + '>세종대학교</option>' +
+      '<option value="konkuk"' + (d.school === 'konkuk' ? ' selected' : '') + '>건국대학교</option>' +
+      '</select>' +
+      '<label for="l-id">학번</label>' +
+      '<input id="l-id" name="studentId" inputmode="numeric" maxlength="10" autocomplete="username" placeholder="예: 20231234" value="' + escapeHtml(d.studentId) + '">' +
+      '<label for="l-pw">비밀번호</label>' +
+      '<input id="l-pw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" value="' + escapeHtml(d.password) + '">' +
+      '<button class="primary" type="submit">로그인</button>' +
+      '<p class="hint">프로토타입이라 입력 형식만 확인하고, 학번과 비밀번호는 저장하지 않아요.</p>' +
+      '</form></div>';
+  }
+
+  function renderHome() {
+    var k = L.KINDS[view.kind];
+    var chips = [['all', '전체']].concat(Object.keys(k.categories).map(function (c) { return [c, k.categories[c]]; }));
+    var list = L.listOpen(state, view.kind, view.category);
+    return kindSeg() +
+      '<h1>' + T[view.kind].homeTitle + ' <span class="count">' + list.length + '</span></h1>' +
+      '<div class="chips" role="group" aria-label="종류로 거르기">' + chips.map(function (c) {
+        return '<button type="button" class="chip" data-cat="' + c[0] + '" aria-pressed="' + (view.category === c[0]) + '">' + c[1] + '</button>';
+      }).join('') + '</div>' +
+      (list.length ? '<ul class="cards">' + list.map(function (e) { return card(e, false); }).join('') + '</ul>'
+        : empty(T[view.kind].empty));
+  }
+
+  function renderNew() {
+    var k = L.KINDS[view.kind], t = T[view.kind];
+    var d = view.draft || { title: '', category: '', place: '', reward: '', deadline: '', detail: '', immediate: false };
+    var cats = Object.keys(k.categories);
+    var current = cats.indexOf(d.category) >= 0 ? d.category : cats[0];
+    var opts = cats.map(function (c) {
+      return '<option value="' + c + '"' + (current === c ? ' selected' : '') + '>' + k.categories[c] + '</option>';
+    }).join('');
+    var time = '<div><label for="f-deadline">' + t.timeLabel + '</label>' +
+      '<input id="f-deadline" name="deadline" type="time" value="' + escapeHtml(d.deadline) + '"></div>';
+    return '<h1>올리기</h1>' + kindSeg() +
+      '<form id="new-form" novalidate>' +
+      (view.error ? '<p class="form-error" role="alert">' + escapeHtml(view.error) + '</p>' : '') +
+      '<label for="f-title">' + t.titleLabel + '</label>' +
+      '<input id="f-title" name="title" maxlength="60" placeholder="' + t.titlePh + '" value="' + escapeHtml(d.title) + '">' +
+      '<label for="f-category">종류</label><select id="f-category" name="category">' + opts + '</select>' +
+      '<label for="f-place">' + t.placeLabel + '</label>' +
+      '<input id="f-place" name="place" maxlength="60" placeholder="' + t.placePh + '" value="' + escapeHtml(d.place) + '">' +
+      (k.reward
+        ? '<div class="row"><div><label for="f-reward">수고비 (원)</label>' +
+          '<input id="f-reward" name="reward" inputmode="numeric" placeholder="2000" value="' + escapeHtml(d.reward) + '"></div>' + time + '</div>'
+        : '<div class="row">' + time + '</div>') +
+      '<label for="f-detail">자세한 내용 <span class="opt">선택</span></label>' +
+      '<textarea id="f-detail" name="detail" rows="3" maxlength="300" placeholder="' + t.detailPh + '">' + escapeHtml(d.detail) + '</textarea>' +
+      '<label class="chk" for="f-immediate"><input id="f-immediate" name="immediate" type="checkbox"' + (d.immediate ? ' checked' : '') + '> 바로 출근 가능</label>' +
+      '<button class="primary" type="submit">' + t.submit + '</button>' +
+      '<p class="hint">' + t.hint + '</p>' +
+      '</form>';
+  }
+
+  function renderDetail() {
+    var e = L.find(state, view.id);
+    var back = '<button class="back" type="button" data-go="' + view.back + '">← 뒤로</button>';
+    if (!e) return back + empty('글을 찾을 수 없어요.');
+    var k = L.KINDS[e.kind], t = T[e.kind];
+    var mine = e.requester === state.me, running = e.runner === state.me;
+    var action;
+    if (e.status === 'open' && !mine) action = '<button class="primary" type="button" data-accept="' + e.id + '">' + t.accept + '</button>';
+    else if (e.status === 'open') action = '<p class="note">' + t.waiting + ' 상단의 전환 버튼을 누르면 상대방 입장을 체험할 수 있어요.</p>';
+    else if (e.status === 'in_progress' && mine) action = '<button class="primary" type="button" data-complete="' + e.id + '">' + t.complete + '</button>';
+    else if (e.status === 'in_progress' && running) action = '<p class="note">' + t.running + '</p>';
+    else if (e.status === 'in_progress') action = '<p class="note">이미 다른 사람과 진행 중이에요.</p>';
+    else action = '<p class="note done">' + k.status.done + '</p>';
+
+    var steps = ['open', 'in_progress', 'done'];
+    var at = steps.indexOf(e.status);
+    return back +
+      '<article class="detail kind-' + e.kind + '">' +
+      '<span class="card-top"><span class="tag">' + k.label + ' · ' + k.categories[e.category] + '</span></span>' +
+      '<h1>' + escapeHtml(e.title) + '</h1>' +
+      '<ol class="steps">' + steps.map(function (s, i) {
+        return '<li class="' + (i < at ? 'past' : i === at ? 'now' : '') + '">' + k.status[s] + '</li>';
+      }).join('') + '</ol>' +
+      '<dl>' + (k.reward ? '<dt>수고비</dt><dd>' + badge(e) + '</dd>' : '<dt>비용</dt><dd>' + badge(e) + '</dd>') +
+      (e.immediate ? '<dt>출근</dt><dd><span class="now-tag">바로 출근 가능</span></dd>' : '') +
+      '<dt>' + t.placeLabel + '</dt><dd>' + escapeHtml(e.place) + '</dd>' +
+      '<dt>' + t.timeLabel + '</dt><dd>' + (e.deadline ? escapeHtml(e.deadline) : '시간 협의') + '</dd>' +
+      '<dt>' + t.poster + '</dt><dd>' + who(e.requester) + (mine ? ' (나)' : '') + '</dd>' +
+      (e.runner ? '<dt>' + t.taker + '</dt><dd>' + who(e.runner) + (running ? ' (나)' : '') + '</dd>' : '') +
+      '</dl>' +
+      (e.detail ? '<p class="detail-text">' + escapeHtml(e.detail) + '</p>' : '') +
+      action +
+      '<button class="ghost" type="button" disabled>채팅하기 (준비 중)</button>' +
+      '</article>';
+  }
+
+  function renderMine() {
+    var m = L.myPosts(state);
+    var list = view.mineTab === 'posted' ? m.posted : m.accepted;
+    return '<h1>내 활동</h1>' +
+      seg('mine', [['posted', '내가 올린 것 ' + m.posted.length], ['accepted', '내가 참여한 것 ' + m.accepted.length]], view.mineTab, '내 활동 구분') +
+      (list.length ? '<ul class="cards">' + list.map(function (e) { return card(e, true); }).join('') + '</ul>'
+        : empty(view.mineTab === 'posted' ? '아직 올린 글이 없어요.' : '아직 참여한 글이 없어요.')) +
+      '<div class="foot"><button class="reset" type="button" data-reset>예시 데이터로 처음부터 다시</button>' +
+      '<button class="reset" type="button" data-logout>로그아웃</button></div>';
+  }
+
+  function render() {
+    var guest = !state.user;
+    document.querySelector('.app').classList.toggle('guest', guest);
+    if (guest) { $('main').innerHTML = renderLogin(); return; }
+    var u = L.userInfo(state, state.me);
+    $('user-name').textContent = u.name;
+    $('user-dept').textContent = u.school;
+    var html = view.name === 'new' ? renderNew() : view.name === 'detail' ? renderDetail()
+      : view.name === 'mine' ? renderMine() : renderHome();
+    $('main').innerHTML = html;
+    var tab = view.name === 'detail' ? view.back : view.name;
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+      if (b.dataset.go === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+  }
+
+  function readDraft() {
+    var f = $('new-form');
+    if (f) {
+      view.draft = {
+        title: f.title.value, category: f.category.value, place: f.place.value,
+        reward: f.reward ? f.reward.value : (view.draft ? view.draft.reward : ''),
+        deadline: f.deadline.value, detail: f.detail.value,
+        immediate: f.immediate ? f.immediate.checked : false
+      };
+    }
+    var lf = $('login-form');
+    if (lf) view.loginDraft = { school: lf.school.value, studentId: lf.studentId.value, password: lf.password.value };
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('button');
+    if (!t) return;
+    var d = t.dataset;
+    readDraft();
+    if (d.go) return go(d.go);
+    if (d.open) return go('detail', { id: Number(d.open), back: view.name === 'mine' ? 'mine' : 'home' });
+    if (d.kind) { view.kind = d.kind; view.category = 'all'; view.error = ''; return render(); }
+    if (d.cat) { view.category = d.cat; return render(); }
+    if (d.mine) { view.mineTab = d.mine; return render(); }
+    if (d.accept || d.complete) {
+      var post = L.find(state, Number(d.accept || d.complete));
+      var r = d.accept ? L.acceptPost(state, Number(d.accept)) : L.completePost(state, Number(d.complete));
+      if (r.ok) save();
+      toast(r.ok ? T[post.kind][d.accept ? 'accepted' : 'completed'] : r.error);
+      return render();
+    }
+    if (t.id === 'switch-user') {
+      L.switchUser(state); save(); render();
+      var u = L.userInfo(state, state.me);
+      return toast(u.name + ' (' + u.school + ') 입장으로 보고 있어요.');
+    }
+    if ('reset' in d) {
+      var user = state.user;
+      state = L.createState(); state.user = user;
+      view.draft = null; save(); render();
+      return toast('예시 데이터로 되돌렸어요.');
+    }
+    if ('logout' in d) {
+      L.logout(state); save();
+      view.loginDraft = { school: '', studentId: '', password: '' };
+      return go('home', { kind: 'errand', category: 'all' });
+    }
+  });
+
+  document.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    readDraft();
+    if (ev.target.id === 'login-form') {
+      var lr = L.login(state, view.loginDraft);
+      if (!lr.ok) { view.error = lr.error; return render(); }
+      save();
+      view.loginDraft = { school: '', studentId: '', password: '' };
+      go('home');
+      return toast(state.user.school + ' 학생으로 로그인했어요.');
+    }
+    if (ev.target.id !== 'new-form') return;
+    var r = L.addPost(state, Object.assign({ kind: view.kind }, view.draft));
+    if (!r.ok) { view.error = r.error; render(); $('main').scrollTop = 0; return; }
+    save();
+    view.draft = null;
+    view.category = 'all';
+    go('detail', { id: r.post.id, back: 'mine', mineTab: 'posted' });
+    toast('글을 올렸어요.');
+  });
+
+  render();
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+</body>
+</html>

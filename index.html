@@ -466,7 +466,7 @@ main > * { flex-shrink: 0; }
       '<span class="status status-' + e.status + '">' + k.status[e.status] + '</span></span>' +
       '<span class="card-title">' + escapeHtml(e.title) + '</span>' +
       '<span class="card-place">' + escapeHtml(e.place) + '</span>' +
-      '<span class="card-bottom"><span>' + badge(e) + (e.immediate ? ' <span class="now-tag">바로 출근 가능</span>' : '') + '</span><span class="deadline">' + when(e) + '</span></span>' +
+      '<span class="card-bottom"><span>' + badge(e) + (e.immediate ? ' <span class="now-tag">바로 출근 원해요</span>' : '') + '</span><span class="deadline">' + when(e) + '</span></span>' +
       '</button></li>';
   }
 
@@ -532,7 +532,7 @@ main > * { flex-shrink: 0; }
         : '<div class="row">' + time + '</div>') +
       '<label for="f-detail">자세한 내용 <span class="opt">선택</span></label>' +
       '<textarea id="f-detail" name="detail" rows="3" maxlength="300" placeholder="' + t.detailPh + '">' + escapeHtml(d.detail) + '</textarea>' +
-      '<label class="chk" for="f-immediate"><input id="f-immediate" name="immediate" type="checkbox"' + (d.immediate ? ' checked' : '') + '> 바로 출근 가능</label>' +
+      '<label class="chk" for="f-immediate"><input id="f-immediate" name="immediate" type="checkbox"' + (d.immediate ? ' checked' : '') + '> 바로 출근 원해요</label>' +
       '<button class="primary" type="submit">' + t.submit + '</button>' +
       '<p class="hint">' + t.hint + '</p>' +
       '</form>';
@@ -562,7 +562,7 @@ main > * { flex-shrink: 0; }
         return '<li class="' + (i < at ? 'past' : i === at ? 'now' : '') + '">' + k.status[s] + '</li>';
       }).join('') + '</ol>' +
       '<dl>' + (k.reward ? '<dt>수고비</dt><dd>' + badge(e) + '</dd>' : '<dt>비용</dt><dd>' + badge(e) + '</dd>') +
-      (e.immediate ? '<dt>출근</dt><dd><span class="now-tag">바로 출근 가능</span></dd>' : '') +
+      (e.immediate ? '<dt>출근</dt><dd><span class="now-tag">바로 출근 원해요</span></dd>' : '') +
       '<dt>' + t.placeLabel + '</dt><dd>' + escapeHtml(e.place) + '</dd>' +
       '<dt>' + t.timeLabel + '</dt><dd>' + (e.deadline ? escapeHtml(e.deadline) : '시간 협의') + '</dd>' +
       '<dt>' + t.poster + '</dt><dd>' + who(e.requester) + (mine ? ' (나)' : '') + '</dd>' +

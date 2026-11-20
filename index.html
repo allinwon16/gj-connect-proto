@@ -55,10 +55,9 @@ button:disabled { cursor: not-allowed; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--accent); color: var(--accent-ink); }
 .brand { font-family: var(--font-display); font-size: 22px; letter-spacing: .5px; }
-.user { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-size: 13px; }
+.user { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-size: 13px; }
 .user b { font-weight: 600; }
-.user small { opacity: .8; font-size: 12px; }
-.user .swap { font-size: 12px; padding-left: 8px; border-left: 1px solid currentColor; }
+.user small { opacity: .85; font-size: 12px; }
 
 main { flex: 1; overflow-y: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
 h1 { font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
@@ -134,7 +133,6 @@ dd { margin: 0; overflow-wrap: anywhere; justify-self: start; }
 .guest .tabs, .guest .actions { display: none; }
 .actions { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .logout { padding: 6px 10px; border: 1.5px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font-size: 12px; white-space: nowrap; }
-.user { padding: 6px 8px; }
 .top { flex-wrap: wrap; }
 .login { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }
 .eyebrow { margin: 0; align-self: flex-start; background: var(--mark); color: var(--mark-ink); font-weight: 700; font-size: 13px; padding: 2px 10px; border-radius: 3px; }
@@ -146,7 +144,6 @@ main > * { flex-shrink: 0; }
 .chk { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; }
 .chk input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 .now-tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 3px; border: 1.5px solid var(--ok); color: var(--ok); }
-
 </style>
 </head>
 <body>
@@ -154,9 +151,9 @@ main > * { flex-shrink: 0; }
   <header class="top">
     <span class="brand">광진이음</span>
     <div class="actions">
-      <button class="user" id="switch-user" type="button" aria-label="사용자 전환">
-        <b id="user-name"></b><small id="user-dept"></small><span class="swap">전환</span>
-      </button>
+      <span class="user">
+        <b id="user-name"></b><small id="user-dept"></small>
+      </span>
       <button class="logout" type="button" data-logout>로그아웃</button>
     </div>
   </header>
@@ -168,6 +165,7 @@ main > * { flex-shrink: 0; }
     <button type="button" data-go="mine">내 활동</button>
   </nav>
 </div>
+
 <script>
 (function (root) {
   'use strict';
@@ -190,38 +188,37 @@ main > * { flex-shrink: 0; }
     }
   };
 
-  // 로그인할 수 있는 소속 대학교
   var SCHOOLS = { sejong: '세종대학교', konkuk: '건국대학교' };
-
-  // 예시용 다른 학생들. A는 로그인한 본인, B는 "전환"으로 체험하는 상대방.
-  var OTHERS = {
-    B: { name: '이준서', school: '건국대학교' },
-    C: { name: '박서연', school: '세종대학교' },
-    D: { name: '최민재', school: '건국대학교' }
-  };
 
   var SEED = [
     { id: 1, kind: 'errand', title: '학생회관 편의점에서 컵라면이랑 삼각김밥 사다 주세요', category: 'delivery',
       place: '건국대 상허기념도서관 3층 열람실 앞', reward: 2000, deadline: '18:30',
-      detail: '신라면 작은 컵 1개, 참치마요 1개요. 물건값은 받을 때 바로 보내드릴게요.', requester: 'B' },
+      detail: '신라면 작은 컵 1개, 참치마요 1개요. 물건값은 받을 때 바로 보내드릴게요.',
+      requester: 'seed_B', requesterInfo: { name: '이준서', school: '건국대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 2, kind: 'errand', title: '전공 과제 20쪽 흑백 양면 출력', category: 'print',
       place: '세종대 학생회관 복사실 → 대양AI센터 407호', reward: 1500, deadline: '13:50',
-      detail: '파일은 수락하시면 보내드려요. 2시 수업 전에 받아야 해요.', requester: 'C' },
+      detail: '파일은 수락하시면 보내드려요. 2시 수업 전에 받아야 해요.',
+      requester: 'seed_C', requesterInfo: { name: '박서연', school: '세종대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 3, kind: 'errand', title: '기숙사 택배 보관함에서 상자 하나 찾아 주세요', category: 'parcel',
       place: '건국대 쿨하우스 1층 → 공학관 로비', reward: 2500, deadline: '21:00',
-      detail: '신발 상자 크기예요. 보관함 번호는 수락 후 알려드릴게요.', requester: 'D' },
+      detail: '신발 상자 크기예요. 보관함 번호는 수락 후 알려드릴게요.',
+      requester: 'seed_D', requesterInfo: { name: '최민재', school: '건국대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 4, kind: 'meal', title: '학생회관 학식 같이 먹을 분', category: 'cafeteria',
       place: '세종대 학생회관 지하 1층 식당 앞', reward: 0, deadline: '12:10',
-      detail: '혼밥이 지겨워서 올려요. 각자 계산하고 30분 정도 먹어요.', requester: 'C' },
+      detail: '혼밥이 지겨워서 올려요. 각자 계산하고 30분 정도 먹어요.',
+      requester: 'seed_C', requesterInfo: { name: '박서연', school: '세종대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 5, kind: 'meal', title: '건대입구 마라탕, 2인 세트 나눠 먹어요', category: 'restaurant',
       place: '건대입구역 2번 출구 앞', reward: 0, deadline: '18:00',
-      detail: '2인 세트가 훨씬 싸서요. 맵기는 2단계로 생각 중이에요.', requester: 'B' },
+      detail: '2인 세트가 훨씬 싸서요. 맵기는 2단계로 생각 중이에요.',
+      requester: 'seed_B', requesterInfo: { name: '이준서', school: '건국대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 6, kind: 'share', title: '안 쓰는 전공 서적 3권 나눔해요', category: 'book',
       place: '세종대 생활관 로비', reward: 0, deadline: '20:00',
-      detail: '한 학기 사용했고 필기는 거의 없어요. 3권 모두 한 번에 가져가실 분이면 좋아요.', requester: 'C' },
+      detail: '한 학기 사용했고 필기는 거의 없어요. 3권 모두 한 번에 가져가실 분이면 좋아요.',
+      requester: 'seed_C', requesterInfo: { name: '박서연', school: '세종대학교' }, status: 'open', runner: null, runnerInfo: null },
     { id: 7, kind: 'share', title: '자취방 정리하면서 남은 수건 4장, 미니 선풍기', category: 'household',
       place: '건국대 후문 앞', reward: 0, deadline: '19:30',
-      detail: '수건은 새것에 가깝고 선풍기는 정상 작동해요. 이사 전에 정리하려고 올려요.', requester: 'D' }
+      detail: '수건은 새것에 가깝고 선풍기는 정상 작동해요. 이사 전에 정리하려고 올려요.',
+      requester: 'seed_D', requesterInfo: { name: '최민재', school: '건국대학교' }, status: 'open', runner: null, runnerInfo: null }
   ];
 
   function own(obj, key) { return typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key); }
@@ -229,14 +226,12 @@ main > * { flex-shrink: 0; }
 
   function createState(seed) {
     var posts = (seed || SEED).map(function (e) {
-      return Object.assign({ status: 'open', runner: null }, e);
+      return Object.assign({ status: 'open', runner: null, runnerInfo: null }, e);
     });
-    var maxId = posts.reduce(function (m, e) { return Math.max(m, e.id); }, 0);
-    return { user: null, me: 'A', posts: posts, nextId: maxId + 1 };
+    return { user: null, posts: posts };
   }
 
-  // 프로토타입이라 실제 학교 서버 인증은 없고, 입력 형식만 확인한다.
-  // 학번 전체와 비밀번호는 저장하지 않고, 화면에 보일 뒤 4자리만 남긴다.
+  // 기기별 고유 사용자 식별자(학교_학번)를 생성해 서로 다른 기기 간 역할을 구분한다.
   function login(state, input) {
     input = input || {};
     var school = own(SCHOOLS, input.school) ? SCHOOLS[input.school] : null;
@@ -247,17 +242,15 @@ main > * { flex-shrink: 0; }
     if (!/^\d{6,10}$/.test(id)) return { ok: false, error: '학번은 6~10자리 숫자로 입력해 주세요.' };
     if (!pw) return { ok: false, error: '비밀번호를 입력해 주세요.' };
     if (pw.length < 4) return { ok: false, error: '비밀번호는 4자 이상 입력해 주세요.' };
-    state.user = { name: '학번 ' + id.slice(-4), school: school };
-    state.me = 'A';
+    state.user = {
+      id: input.school + '_' + id,
+      name: '학번 ' + id.slice(-4),
+      school: school
+    };
     return { ok: true };
   }
 
-  function logout(state) { state.user = null; state.me = 'A'; }
-
-  function userInfo(state, key) {
-    if (key === 'A') return state.user;
-    return own(OTHERS, key) ? OTHERS[key] : null;
-  }
+  function logout(state) { state.user = null; }
 
   function find(state, id) {
     for (var i = 0; i < state.posts.length; i++) {
@@ -266,7 +259,7 @@ main > * { flex-shrink: 0; }
     return null;
   }
 
-  var NEED_LOGIN = { ok: false, error: '학교 이메일로 로그인한 뒤에 이용할 수 있어요.' };
+  var NEED_LOGIN = { ok: false, error: '학교 학번으로 로그인한 뒤에 이용할 수 있어요.' };
 
   function addPost(state, input) {
     if (!state.user) return NEED_LOGIN;
@@ -280,8 +273,10 @@ main > * { flex-shrink: 0; }
     if (kind.reward && !/^\d{1,7}$/.test(rewardText)) {
       return { ok: false, error: '수고비는 0원 이상의 숫자로 적어 주세요.' };
     }
+    // 여러 기기에서 동시에 글을 올려도 ID가 겹치지 않도록 타임스탬프 기반 ID 사용
+    var postId = Date.now() * 100 + Math.floor(Math.random() * 100);
     var post = {
-      id: state.nextId++,
+      id: postId,
       kind: input.kind,
       title: title,
       category: input.category,
@@ -291,8 +286,10 @@ main > * { flex-shrink: 0; }
       detail: text(input.detail),
       immediate: !!input.immediate,
       status: 'open',
-      requester: state.me,
-      runner: null
+      requester: state.user.id,
+      requesterInfo: { name: state.user.name, school: state.user.school },
+      runner: null,
+      runnerInfo: null
     };
     state.posts.push(post);
     return { ok: true, post: post };
@@ -302,21 +299,22 @@ main > * { flex-shrink: 0; }
     if (!state.user) return NEED_LOGIN;
     var e = find(state, id);
     if (!e) return { ok: false, error: '글을 찾을 수 없어요.' };
-    if (e.requester === state.me) return { ok: false, error: '내가 올린 글에는 내가 참여할 수 없어요.' };
+    if (e.requester === state.user.id) return { ok: false, error: '내가 올린 글에는 내가 참여할 수 없어요.' };
     if (e.status !== 'open') return { ok: false, error: '이미 다른 사람이 먼저 참여했어요.' };
     e.status = 'in_progress';
-    e.runner = state.me;
-    return { ok: true };
+    e.runner = state.user.id;
+    e.runnerInfo = { name: state.user.name, school: state.user.school };
+    return { ok: true, post: e };
   }
 
   function completePost(state, id) {
     if (!state.user) return NEED_LOGIN;
     var e = find(state, id);
     if (!e) return { ok: false, error: '글을 찾을 수 없어요.' };
-    if (e.requester !== state.me) return { ok: false, error: '완료 처리는 글을 올린 사람만 할 수 있어요.' };
+    if (e.requester !== state.user.id) return { ok: false, error: '완료 처리는 글을 올린 사람만 할 수 있어요.' };
     if (e.status !== 'in_progress') return { ok: false, error: '상대가 정해진 글만 완료할 수 있어요.' };
     e.status = 'done';
-    return { ok: true };
+    return { ok: true, post: e };
   }
 
   function byNewest(a, b) { return b.id - a.id; }
@@ -329,25 +327,24 @@ main > * { flex-shrink: 0; }
   }
 
   function myPosts(state) {
+    var uid = state.user ? state.user.id : '';
     return {
-      posted: state.posts.filter(function (e) { return e.requester === state.me; }).sort(byNewest),
-      accepted: state.posts.filter(function (e) { return e.runner === state.me; }).sort(byNewest)
+      posted: state.posts.filter(function (e) { return e.requester === uid; }).sort(byNewest),
+      accepted: state.posts.filter(function (e) { return e.runner === uid; }).sort(byNewest)
     };
   }
-
-  function switchUser(state) { state.me = state.me === 'A' ? 'B' : 'A'; }
 
   var api = {
     KINDS: KINDS, SCHOOLS: SCHOOLS, SEED: SEED,
     createState: createState, login: login, logout: logout,
-    userInfo: userInfo, find: find, addPost: addPost, acceptPost: acceptPost,
-    completePost: completePost, listOpen: listOpen, myPosts: myPosts, switchUser: switchUser
+    find: find, addPost: addPost, acceptPost: acceptPost,
+    completePost: completePost, listOpen: listOpen, myPosts: myPosts
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Logic = api;
 })(typeof window !== 'undefined' ? window : globalThis);
-
 </script>
+
 <script>
 (function (root) {
   'use strict';
@@ -364,9 +361,8 @@ main > * { flex-shrink: 0; }
   }
 
   var L = root.Logic;
-  var KEY = 'gwangjin-ieum-prototype-v4';
+  var USER_KEY = 'gwangjin-ieum-user-v1';
 
-  // 서비스마다 달라지는 화면 문구
   var T = {
     errand: {
       homeTitle: '지금 올라온 심부름', empty: '이 종류로 대기 중인 심부름이 없어요.',
@@ -404,29 +400,34 @@ main > * { flex-shrink: 0; }
   };
   var KIND_KEYS = Object.keys(L.KINDS);
 
-  var state = load() || L.createState();
+  var state = L.createState();
+  state.user = loadUser();
+
   var view = { name: 'home', id: null, back: 'home', kind: 'errand', category: 'all', mineTab: 'posted',
     draft: null, error: '', loginDraft: { school: '', studentId: '', password: '' } };
   var toastTimer = null;
 
-  function load() {
+  // 로그인 정보만 기기별 localStorage에 저장 (게시글은 Firebase로 실시간 동기화)
+  function loadUser() {
     try {
-      var raw = localStorage.getItem(KEY);
+      var raw = localStorage.getItem(USER_KEY);
       if (!raw) return null;
-      var s = JSON.parse(raw);
-      if (s && Array.isArray(s.posts) && (s.me === 'A' || s.me === 'B') && typeof s.nextId === 'number') return s;
-    } catch (e) { /* 저장소를 못 쓰면 메모리로만 동작 */ }
+      var u = JSON.parse(raw);
+      if (u && u.id && u.name && u.school) return u;
+    } catch (e) { /* 무시 */ }
     return null;
   }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 무시 */ }
+  function saveUser() {
+    try {
+      if (state.user) localStorage.setItem(USER_KEY, JSON.stringify(state.user));
+      else localStorage.removeItem(USER_KEY);
+    } catch (e) { /* 무시 */ }
   }
 
   var $ = function (id) { return document.getElementById(id); };
   var won = function (n) { return Number(n).toLocaleString('ko-KR') + '원'; };
-  function who(key) {
-    var u = L.userInfo(state, key);
-    return u ? escapeHtml(u.name) + ' · ' + escapeHtml(u.school) : '알 수 없음';
+  function who(info) {
+    return info ? escapeHtml(info.name) + ' · ' + escapeHtml(info.school) : '알 수 없음';
   }
   function when(e) { return e.deadline ? escapeHtml(e.deadline) + T[e.kind].timeSuffix : '시간 협의'; }
   function badge(e) {
@@ -491,7 +492,7 @@ main > * { flex-shrink: 0; }
       '<label for="l-pw">비밀번호</label>' +
       '<input id="l-pw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" value="' + escapeHtml(d.password) + '">' +
       '<button class="primary" type="submit">로그인</button>' +
-      '<p class="hint">프로토타입이라 입력 형식만 확인하고, 학번과 비밀번호는 저장하지 않아요.</p>' +
+      '<p class="hint">다른 기기와 테스트하려면 기기마다 서로 다른 학번으로 로그인해 주세요.</p>' +
       '</form></div>';
   }
 
@@ -543,10 +544,11 @@ main > * { flex-shrink: 0; }
     var back = '<button class="back" type="button" data-go="' + view.back + '">← 뒤로</button>';
     if (!e) return back + empty('글을 찾을 수 없어요.');
     var k = L.KINDS[e.kind], t = T[e.kind];
-    var mine = e.requester === state.me, running = e.runner === state.me;
+    var uid = state.user ? state.user.id : '';
+    var mine = e.requester === uid, running = e.runner === uid;
     var action;
     if (e.status === 'open' && !mine) action = '<button class="primary" type="button" data-accept="' + e.id + '">' + t.accept + '</button>';
-    else if (e.status === 'open') action = '<p class="note">' + t.waiting + ' 상단의 전환 버튼을 누르면 상대방 입장을 체험할 수 있어요.</p>';
+    else if (e.status === 'open') action = '<p class="note">' + t.waiting + '</p>';
     else if (e.status === 'in_progress' && mine) action = '<button class="primary" type="button" data-complete="' + e.id + '">' + t.complete + '</button>';
     else if (e.status === 'in_progress' && running) action = '<p class="note">' + t.running + '</p>';
     else if (e.status === 'in_progress') action = '<p class="note">이미 다른 사람과 진행 중이에요.</p>';
@@ -565,8 +567,8 @@ main > * { flex-shrink: 0; }
       (e.immediate ? '<dt>출근</dt><dd><span class="now-tag">바로 출근 원해요</span></dd>' : '') +
       '<dt>' + t.placeLabel + '</dt><dd>' + escapeHtml(e.place) + '</dd>' +
       '<dt>' + t.timeLabel + '</dt><dd>' + (e.deadline ? escapeHtml(e.deadline) : '시간 협의') + '</dd>' +
-      '<dt>' + t.poster + '</dt><dd>' + who(e.requester) + (mine ? ' (나)' : '') + '</dd>' +
-      (e.runner ? '<dt>' + t.taker + '</dt><dd>' + who(e.runner) + (running ? ' (나)' : '') + '</dd>' : '') +
+      '<dt>' + t.poster + '</dt><dd>' + who(e.requesterInfo) + (mine ? ' (나)' : '') + '</dd>' +
+      (e.runner ? '<dt>' + t.taker + '</dt><dd>' + who(e.runnerInfo) + (running ? ' (나)' : '') + '</dd>' : '') +
       '</dl>' +
       (e.detail ? '<p class="detail-text">' + escapeHtml(e.detail) + '</p>' : '') +
       action +
@@ -581,7 +583,7 @@ main > * { flex-shrink: 0; }
       seg('mine', [['posted', '내가 올린 것 ' + m.posted.length], ['accepted', '내가 참여한 것 ' + m.accepted.length]], view.mineTab, '내 활동 구분') +
       (list.length ? '<ul class="cards">' + list.map(function (e) { return card(e, true); }).join('') + '</ul>'
         : empty(view.mineTab === 'posted' ? '아직 올린 글이 없어요.' : '아직 참여한 글이 없어요.')) +
-      '<div class="foot"><button class="reset" type="button" data-reset>예시 데이터로 처음부터 다시</button>' +
+      '<div class="foot"><button class="reset" type="button" data-reset>예시 데이터로 초기화</button>' +
       '<button class="reset" type="button" data-logout>로그아웃</button></div>';
   }
 
@@ -589,9 +591,8 @@ main > * { flex-shrink: 0; }
     var guest = !state.user;
     document.querySelector('.app').classList.toggle('guest', guest);
     if (guest) { $('main').innerHTML = renderLogin(); return; }
-    var u = L.userInfo(state, state.me);
-    $('user-name').textContent = u.name;
-    $('user-dept').textContent = u.school;
+    $('user-name').textContent = state.user.name;
+    $('user-dept').textContent = state.user.school;
     var html = view.name === 'new' ? renderNew() : view.name === 'detail' ? renderDetail()
       : view.name === 'mine' ? renderMine() : renderHome();
     $('main').innerHTML = html;
@@ -615,6 +616,18 @@ main > * { flex-shrink: 0; }
     if (lf) view.loginDraft = { school: lf.school.value, studentId: lf.studentId.value, password: lf.password.value };
   }
 
+  // Firebase 실시간 데이터 수신 시 호출되는 콜백
+  root.onRemotePostsUpdate = function (remoteList) {
+    state.posts = remoteList;
+    if (state.user && view.name !== 'new') {
+      render();
+    }
+  };
+
+  root.getSeedPosts = function () {
+    return L.SEED.map(function (e) { return Object.assign({}, e); });
+  };
+
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('button');
     if (!t) return;
@@ -626,25 +639,30 @@ main > * { flex-shrink: 0; }
     if (d.cat) { view.category = d.cat; return render(); }
     if (d.mine) { view.mineTab = d.mine; return render(); }
     if (d.accept || d.complete) {
-      var post = L.find(state, Number(d.accept || d.complete));
-      var r = d.accept ? L.acceptPost(state, Number(d.accept)) : L.completePost(state, Number(d.complete));
-      if (r.ok) save();
+      var targetId = Number(d.accept || d.complete);
+      var post = L.find(state, targetId);
+      var r = d.accept ? L.acceptPost(state, targetId) : L.completePost(state, targetId);
+      if (r.ok && root.cloudDB) {
+        root.cloudDB.updateStatus(targetId, {
+          status: r.post.status,
+          runner: r.post.runner,
+          runnerInfo: r.post.runnerInfo
+        });
+      }
       toast(r.ok ? T[post.kind][d.accept ? 'accepted' : 'completed'] : r.error);
       return render();
     }
-    if (t.id === 'switch-user') {
-      L.switchUser(state); save(); render();
-      var u = L.userInfo(state, state.me);
-      return toast(u.name + ' (' + u.school + ') 입장으로 보고 있어요.');
-    }
     if ('reset' in d) {
-      var user = state.user;
-      state = L.createState(); state.user = user;
-      view.draft = null; save(); render();
-      return toast('예시 데이터로 되돌렸어요.');
+      var seeds = root.getSeedPosts();
+      state.posts = seeds;
+      if (root.cloudDB) root.cloudDB.resetAll(seeds);
+      view.draft = null;
+      render();
+      return toast('예시 데이터로 초기화했어요.');
     }
     if ('logout' in d) {
-      L.logout(state); save();
+      L.logout(state);
+      saveUser();
       view.loginDraft = { school: '', studentId: '', password: '' };
       return go('home', { kind: 'errand', category: 'all' });
     }
@@ -656,7 +674,7 @@ main > * { flex-shrink: 0; }
     if (ev.target.id === 'login-form') {
       var lr = L.login(state, view.loginDraft);
       if (!lr.ok) { view.error = lr.error; return render(); }
-      save();
+      saveUser();
       view.loginDraft = { school: '', studentId: '', password: '' };
       go('home');
       return toast(state.user.school + ' 학생으로 로그인했어요.');
@@ -664,7 +682,7 @@ main > * { flex-shrink: 0; }
     if (ev.target.id !== 'new-form') return;
     var r = L.addPost(state, Object.assign({ kind: view.kind }, view.draft));
     if (!r.ok) { view.error = r.error; render(); $('main').scrollTop = 0; return; }
-    save();
+    if (root.cloudDB) root.cloudDB.savePost(r.post);
     view.draft = null;
     view.category = 'all';
     go('detail', { id: r.post.id, back: 'mine', mineTab: 'posted' });
@@ -673,7 +691,61 @@ main > * { flex-shrink: 0; }
 
   render();
 })(typeof window !== 'undefined' ? window : globalThis);
-
 </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // TODO: Firebase 콘솔에서 발급받은 본인 프로젝트의 설정값으로 교체하세요.
+const firebaseConfig = {
+  apiKey: "AIzaSyCiv5YBwR1_sFddoP7oyDhxM711odVAh6g",
+  authDomain: "gj-em-66501.firebaseapp.com",
+  databaseURL: "https://gj-em-66501-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gj-em-66501",
+  storageBucket: "gj-em-66501.firebasestorage.app",
+  messagingSenderId: "646603842391",
+  appId: "1:646603842391:web:9febeb33485450a1f35412",
+  measurementId: "G-HZDQTFYFSF"
+};
+
+  if (firebaseConfig.apiKey !== "여기에_API_KEY") {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const postsRef = ref(db, 'posts');
+    let initialized = false;
+
+    // 1) 실시간 수신: 다른 기기에서 글이 올라오거나 상태가 바뀌면 즉시 화면 갱신
+    onValue(postsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        if (!initialized && window.getSeedPosts) {
+          initialized = true;
+          const seedMap = {};
+          window.getSeedPosts().forEach((p) => { seedMap[p.id] = p; });
+          set(postsRef, seedMap);
+          return;
+        }
+        window.onRemotePostsUpdate([]);
+        return;
+      }
+      initialized = true;
+      window.onRemotePostsUpdate(Object.values(data));
+    });
+
+    // 2) 글 올리기 / 수락 / 완료 / 초기화 시 클라우드에 저장
+    window.cloudDB = {
+      savePost: (post) => set(ref(db, 'posts/' + post.id), post),
+      updateStatus: (id, patch) => update(ref(db, 'posts/' + id), patch),
+      resetAll: (seeds) => {
+        const seedMap = {};
+        seeds.forEach((p) => { seedMap[p.id] = p; });
+        return set(postsRef, seedMap);
+      }
+    };
+  }
+</script>
+</body>
+</html>
 </body>
 </html>

@@ -195,6 +195,10 @@ main > * { flex-shrink: 0; }
 (function (root) {
   'use strict';
 
+  // TODO: 관리자 학번 목록 ('학교코드_학번' 형식, 학교코드: sejong 또는 konkuk)
+  // 여러 명을 지정하려면 ['sejong_20231234', 'konkuk_20235678'] 처럼 추가하세요.
+  var ADMIN_IDS = ['sejong_25010793'];
+
   var KINDS = {
     errand: {
       label: '심부름', reward: true,
@@ -276,6 +280,10 @@ main > * { flex-shrink: 0; }
   }
 
   function logout(state) { state.user = null; }
+
+  function isAdmin(state) {
+    return !!(state && state.user && ADMIN_IDS.indexOf(state.user.id) >= 0);
+  }
 
   function find(state, id) {
     for (var i = 0; i < state.posts.length; i++) {
@@ -367,8 +375,8 @@ main > * { flex-shrink: 0; }
   }
 
   var api = {
-    KINDS: KINDS, SCHOOLS: SCHOOLS, SEED: SEED,
-    createState: createState, login: login, logout: logout,
+    ADMIN_IDS: ADMIN_IDS, KINDS: KINDS, SCHOOLS: SCHOOLS, SEED: SEED,
+    createState: createState, login: login, logout: logout, isAdmin: isAdmin,
     find: find, canChat: canChat, addPost: addPost, acceptPost: acceptPost,
     completePost: completePost, listOpen: listOpen, myPosts: myPosts
   };
@@ -704,11 +712,14 @@ main > * { flex-shrink: 0; }
   function renderMine() {
     var m = L.myPosts(state);
     var list = view.mineTab === 'posted' ? m.posted : m.accepted;
+    var resetBtn = L.isAdmin(state)
+      ? '<button class="reset" type="button" data-reset>예시 데이터로 초기화</button>'
+      : '';
     return '<h1>내 활동</h1>' +
       seg('mine', [['posted', '내가 올린 것 ' + m.posted.length], ['accepted', '내가 참여한 것 ' + m.accepted.length]], view.mineTab, '내 활동 구분') +
       (list.length ? '<ul class="cards">' + list.map(function (e) { return card(e, true); }).join('') + '</ul>'
         : empty(view.mineTab === 'posted' ? '아직 올린 글이 없어요.' : '아직 참여한 글이 없어요.')) +
-      '<div class="foot"><button class="reset" type="button" data-reset>예시 데이터로 초기화</button>' +
+      '<div class="foot">' + resetBtn +
       '<button class="reset" type="button" data-logout>로그아웃</button></div>';
   }
 
@@ -802,6 +813,8 @@ main > * { flex-shrink: 0; }
       return render();
     }
     if ('reset' in d) {
+      if (!L.isAdmin(state)) return toast('관리자만 초기화할 수 있어요.');
+      if (!window.confirm('모든 사용자의 게시글과 채팅 내역이 초기화됩니다. 계속할까요?')) return;
       stopChatSubscription();
       var seeds = root.getSeedPosts();
       state.posts = seeds;
@@ -931,7 +944,5 @@ main > * { flex-shrink: 0; }
     };
   }
 </script>
-</body>
-</html>
 </body>
 </html>
